@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids Task Timer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+        :root {
+            --bg-color: #F0F8FF;
+            --header-bg: #FFFFFF;
+            --timer-color: #333;
+            --red: #F44336;
+            --green: #4CAF50;
+            --blue: #2196F3;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            --glow-shadow: 0 0 20px rgba(90, 178, 255, 0.5);
+            --border-radius: 15px;
+            --bold-border: 3px solid;
+
+            /* Vibrant Pastel Colors */
+            --c1: #FFADAD; /* Light Pink */
+            --c2: #FFD6A5; /* Light Orange */
+            --c3: #FDFFB6; /* Light Yellow */
+            --c4: #CAFFBF; /* Light Green */
+            --c5: #9BF6FF; /* Light Blue */
+            --c6: #A0C4FF; /* Light Indigo */
+            --c7: #BDB2FF; /* Light Violet */
+            --c8: #FFC6FF; /* Light Magenta */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--timer-color);
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Header & Timer Section */
+        header {
+            background-color: var(--header-bg);
+            padding: 15px 25px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        #overtime-indicator {
+            display: none;
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--red);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .main-timer-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        #main-timer {
+            font-size: 3.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--timer-color);
+            transition: color 0.3s;
+        }
+        #main-timer.overtime {
+            color: var(--red);
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .settings-btn, #top10-btn {
+            font-size: 2.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+            padding: 0;
+        }
+        .settings-btn:hover {
+            transform: rotate(45deg);
+        }
+        #top10-btn:hover {
+            transform: scale(1.1);
+        }
+        .dropdown-container {
+            position: relative;
+        }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 60px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            width: 180px;
+            z-index: 1000;
+        }
+        .dropdown-menu button, .dropdown-menu label {
+            display: block;
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .dropdown-menu button:hover, .dropdown-menu label:hover {
+            background-color: #f0f0f0;
+        }
+
+        #import-input {
+            display: none;
+        }
+
+        #run-button {
+            display: none;
+            font-size: 1.2rem;
+            padding: 10px 25px;
+            background-color: var(--green);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            margin-right: 15px;
+        }
+        #run-button:hover {
+            background-color: #45a049;
+        }
+
+        /* Main Content - Columns */
+        .main-content {
+            display: flex;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 25px;
+            gap: 25px;
+            min-height: 55vh;
+            align-items: stretch;
+        }
+
+        .child-column {
+            flex: 0 0 320px;
+            display: flex;
+            flex-direction: column;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            border: var(--bold-border) transparent;
+        }
+        .child-column.focused {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15), var(--glow-shadow);
+            border-color: var(--blue);
+        }
+        .child-column h2 {
+            text-align: center;
+            margin-bottom: 5px;
+            color: rgba(0,0,0,0.7);
+            padding: 0 25px;
+        }
+        .child-timer {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: rgba(0,0,0,0.6);
+        }
+
+        .task-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .task-card {
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            cursor: default;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+        .task-card.completed {
+            background-color: rgba(255, 255, 255, 0.4);
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+        .task-card input[type="checkbox"] {
+            width: 25px;
+            height: 25px;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+        .task-card .task-name { flex-grow: 1; font-size: 1.1rem; }
+        .task-card .task-emoji { font-size: 1.8rem; }
+        
+        /* Edit Mode Styles */
+        .edit-mode-panel {
+            display: none;
+            flex-direction: column;
+            background-color: #e0e8ff;
+            padding: 25px;
+            margin: 0 25px 25px 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+        .edit-mode-panel h3 { text-align: center; margin-bottom: 15px; font-size: 1.4rem; }
+        .master-task-area { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; }
+        .create-task-form, .create-column-form { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; justify-content: center; flex-wrap: wrap; }
+        .create-task-form input, .create-column-form input { padding: 10px; border: 2px solid #ccc; border-radius: 10px; font-size: 1rem; }
+        .create-task-form button, .create-column-form button { padding: 10px 15px; border: none; background-color: var(--blue); color: white; font-weight: 600; border-radius: 10px; cursor: pointer; }
+
+        .master-task-card { background-color: white; border-radius: 10px; padding: 10px 15px; display: flex; align-items: center; flex-shrink: 0; gap: 10px; cursor: grab; box-shadow: var(--shadow); border: 2px solid #ccc; }
+        .master-task-card.dragging { opacity: 0.5; transform: scale(1.05); }
+
+        .child-column-header { display: flex; justify-content: center; align-items: center; position: relative; }
+        .remove-column-btn, .remove-task-btn { display: none; position: absolute; background: var(--red); color: white; border: none; border-radius: 50%; font-weight: bold; cursor: pointer; text-align: center; z-index: 10; }
+        .remove-column-btn { right: 0; top: -5px; width: 25px; height: 25px; line-height: 25px; }
+        .remove-task-btn { right: 5px; top: 5px; width: 22px; height: 22px; font-size: 14px; line-height: 22px; }
+        
+        body.edit-mode .remove-column-btn, body.edit-mode .remove-task-btn { display: block; }
+
+        /* Modal / Popup Styles */
+        .modal { display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); justify-content: center; align-items: center; }
+        .modal-content { background-color: #fefefe; padding: 40px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: var(--border-radius); box-shadow: var(--shadow); text-align: center; }
+        .modal-content h2 { font-size: 2.2rem; margin-bottom: 20px; }
+        .modal-content button { background-color: var(--blue); color: white; padding: 12px 30px; border: none; cursor: pointer; border-radius: 10px; font-size: 1.1rem; font-weight: 600; margin-top: 15px; }
+        
+        #top10-list { list-style-type: none; padding: 0; text-align: left; font-size: 1.2rem; }
+        #top10-list li { padding: 8px; border-bottom: 1px solid #ddd; }
+        #top10-list li:last-child { border-bottom: none; }
+        #top10-list li .name { font-weight: 600; }
+        #top10-list li .time { float: right; }
+        
+        #about-modal .modal-content { text-align: left; }
+        #about-modal p { margin-bottom: 10px; line-height: 1.5; }
+        #about-modal strong { color: var(--blue); }
+        #about-modal a { color: var(--blue); text-decoration: underline; cursor: pointer;}
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <div id="overtime-indicator">Overtime</div>
+            <div class="main-timer-container">
+                <div id="main-timer">15:00</div>
+                <input type="number" id="main-timer-input" min="1" value="15" style="display: none; width: 80px; font-size: 1.5rem; padding: 5px;">
+            </div>
+            <div class="controls">
+                <button id="run-button">▶️ Run</button>
+                <button id="top10-btn">🏆</button>
+                <div class="dropdown-container">
+                    <button class="settings-btn" id="settings-btn">🛠️</button>
+                    <div class="dropdown-menu" id="dropdown-menu">
+                        <button id="edit-btn">✏️ Edit</button>
+                        <button id="save-btn">💾 Save</button>
+                        <button id="export-btn">📤 Export</button>
+                        <label for="import-input" id="import-label">📥 Import</label>
+                        <input type="file" id="import-input" accept=".json">
+                        <button id="reset-btn">🔄 Reset</button>
+                        <button id="about-btn">ℹ️ About</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content" id="main-content"></main>
+        
+        <div class="edit-mode-panel" id="edit-mode-panel">
+            <div style="margin-bottom: 25px;">
+                <h3>Create & Manage Columns</h3>
+                <div class="create-column-form">
+                     <input type="text" id="new-child-name" placeholder="Child's Name">
+                     <button id="add-child-btn">Add Column</button>
+                </div>
+            </div>
+            <div>
+                 <h3>Master Task List (Drag to Columns)</h3>
+                 <div class="create-task-form">
+                    <input type="text" id="new-task-name" placeholder="Task Name">
+                    <input type="text" id="new-task-emoji" placeholder="Emoji (e.g., ✨)" maxlength="2">
+                    <button id="add-task-btn">Create Task</button>
+                </div>
+                <div class="master-task-area" id="master-task-area"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="all-done-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="all-done-message">All Done! 🥳</h2>
+            <button id="all-done-ok-btn">OK</button>
+        </div>
+    </div>
+
+    <div id="top10-modal" class="modal">
+        <div class="modal-content">
+            <h2>🏆 Top 10 Times 🏆</h2>
+            <ol id="top10-list"></ol>
+            <button id="top10-ok-btn">OK</button>
+        </div>
+    </div>
+    
+    <div id="about-modal" class="modal">
+        <div class="modal-content">
+            <h2>About this App</h2>
+            <p><strong>App Name and Version:</strong> KidsTaskTimer v1.1.0</p>
+            <p><strong>Description:</strong> KidsTaskTimer is an interactive task list that is fun for the whole family! Parents use the Edit option to customize the Timer, Columns, and Tasks for their kids. Each task is a reusable card that can be dragged and dropped into as many lists as you want. Add some flair to each task with emojis. Switch back to run mode to kick off the countdown! Who has completed their tasks the fastest? Check out the Top 10 list!</p>
+            <p><strong>Developer/Company Info:</strong> Adam N. Butcher | 360v | go360v@gmail.com</p>
+            <p><strong>Release Notes:</strong> Initial release</p>
+            <p><strong>Terms of Service and Privacy Policy:</strong> <a href="#" id="license-link">LICENSE</a></p>
+            <p><strong>Contact/Support Information:</strong> go360v@gmail.com</p>
+            <p><strong>Acknowledgments:</strong> Developed with the assistance of Google AI Studio.</p>
+            <button id="about-ok-btn">OK</button>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // DOM Elements
+        const mainTimerDisplay = document.getElementById('main-timer');
+        const mainTimerInput = document.getElementById('main-timer-input');
+        const overtimeIndicator = document.getElementById('overtime-indicator');
+        const settingsBtn = document.getElementById('settings-btn');
+        const dropdownMenu = document.getElementById('dropdown-menu');
+        const editBtn = document.getElementById('edit-btn');
+        const runBtn = document.getElementById('run-button');
+        const mainContent = document.getElementById('main-content');
+        const editPanel = document.getElementById('edit-mode-panel');
+        const addChildBtn = document.getElementById('add-child-btn');
+        const newChildNameInput = document.getElementById('new-child-name');
+        const addTaskBtn = document.getElementById('add-task-btn');
+        const newTaskNameInput = document.getElementById('new-task-name');
+        const newTaskEmojiInput = document.getElementById('new-task-emoji');
+        const masterTaskArea = document.getElementById('master-task-area');
+        
+        const saveBtn = document.getElementById('save-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const importInput = document.getElementById('import-input');
+        const resetBtn = document.getElementById('reset-btn');
+        const top10Btn = document.getElementById('top10-btn');
+        const aboutBtn = document.getElementById('about-btn');
+        
+        const allDoneModal = document.getElementById('all-done-modal');
+        const allDoneMessage = document.getElementById('all-done-message');
+        const allDoneOkBtn = document.getElementById('all-done-ok-btn');
+        const top10Modal = document.getElementById('top10-modal');
+        const top10OkBtn = document.getElementById('top10-ok-btn');
+        const top10List = document.getElementById('top10-list');
+        const aboutModal = document.getElementById('about-modal');
+        const aboutOkBtn = document.getElementById('about-ok-btn');
+        const licenseLink = document.getElementById('license-link');
+
+        // App State
+        let state = {
+            mainTimer: {
+                initialTime: 15 * 60,
+                remainingTime: 15 * 60,
+                overtimeSeconds: 0,
+                isOvertime: false,
+                isRunning: false,
+                intervalId: null,
+            },
+            children: [],
+            masterTasks: [],
+            top10: [],
+            editMode: false,
+        };
+        
+        const COLORS = ['--c1', '--c2', '--c3', '--c4', '--c5', '--c6', '--c7', '--c8'];
+
+        // --- Timers ---
+        function formatTime(seconds) {
+            const mins = Math.floor(Math.abs(seconds) / 60);
+            const secs = Math.abs(seconds) % 60;
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function startMainTimer() {
+            if (state.mainTimer.isRunning || state.editMode) return;
+            state.mainTimer.isRunning = true;
+            
+            state.children.forEach(child => {
+                if (!child.isFinished) startChildTimer(child.id);
+            });
+            
+            state.mainTimer.intervalId = setInterval(() => {
+                if (!state.mainTimer.isOvertime && state.mainTimer.remainingTime > 0) {
+                    state.mainTimer.remainingTime--;
+                    mainTimerDisplay.textContent = formatTime(state.mainTimer.remainingTime);
+                } else {
+                    if (!state.mainTimer.isOvertime) {
+                        state.mainTimer.isOvertime = true;
+                        overtimeIndicator.style.display = 'block';
+                        mainTimerDisplay.classList.add('overtime');
+                    }
+                    state.mainTimer.overtimeSeconds++;
+                    mainTimerDisplay.textContent = `+${formatTime(state.mainTimer.overtimeSeconds)}`;
+                }
+            }, 1000);
+        }
+        
+        function stopMainTimer() {
+            clearInterval(state.mainTimer.intervalId);
+            state.mainTimer.intervalId = null;
+            state.mainTimer.isRunning = false;
+            state.children.forEach(child => stopChildTimer(child.id));
+        }
+        
+        function startChildTimer(childId) {
+            const child = state.children.find(c => c.id === childId);
+            if (!child || child.intervalId) return;
+            child.intervalId = setInterval(() => {
+                child.elapsedTime++;
+                const timerEl = document.querySelector(`.child-column[data-id="${childId}"] .child-timer`);
+                if (timerEl) timerEl.textContent = formatTime(child.elapsedTime);
+            }, 1000);
+        }
+        
+        function stopChildTimer(childId) {
+            const child = state.children.find(c => c.id === childId);
+            if (child && child.intervalId) {
+                clearInterval(child.intervalId);
+                child.intervalId = null;
+            }
+        }
+        
+        function resetTimers() {
+            stopMainTimer();
+            state.mainTimer.remainingTime = state.mainTimer.initialTime;
+            state.mainTimer.isOvertime = false;
+            state.mainTimer.overtimeSeconds = 0;
+            
+            overtimeIndicator.style.display = 'none';
+            mainTimerDisplay.classList.remove('overtime');
+            mainTimerDisplay.textContent = formatTime(state.mainTimer.remainingTime);
+            
+            state.children.forEach(child => {
+                stopChildTimer(child.id);
+                child.elapsedTime = 0;
+                child.isFinished = false;
+            });
+            render();
+        }
+
+        // --- Rendering ---
+        function render() {
+            mainContent.innerHTML = '';
+            state.children.forEach((child, index) => {
+                const column = document.createElement('div');
+                column.className = 'child-column';
+                column.dataset.id = child.id;
+                column.style.backgroundColor = `var(${COLORS[index % COLORS.length]})`;
+                column.innerHTML = `
+                    <div class="child-column-header">
+                        <h2>${child.name}</h2>
+                        <button class="remove-column-btn" data-id="${child.id}">×</button>
+                    </div>
+                    <div class="child-timer">${formatTime(child.elapsedTime)}</div>
+                    <div class="task-list"></div>`;
+                
+                const taskList = column.querySelector('.task-list');
+                child.tasks.forEach(task => {
+                    const taskCard = document.createElement('div');
+                    taskCard.className = 'task-card' + (task.completed ? ' completed' : '');
+                    taskCard.innerHTML = `
+                        <input type="checkbox" data-child-id="${child.id}" data-task-id="${task.id}" ${task.completed ? 'checked' : ''} ${state.editMode ? 'disabled' : ''}>
+                        <span class="task-name">${task.name}</span>
+                        <span class="task-emoji">${task.emoji}</span>
+                        <button class="remove-task-btn" data-child-id="${child.id}" data-task-id="${task.id}">×</button>`;
+                    taskList.appendChild(taskCard);
+                });
+                mainContent.appendChild(column);
+            });
+            renderMasterTasks();
+        }
+
+        function renderMasterTasks() {
+            masterTaskArea.innerHTML = '';
+            state.masterTasks.forEach(task => {
+                const masterCard = document.createElement('div');
+                masterCard.className = 'master-task-card';
+                masterCard.draggable = true;
+                masterCard.dataset.taskId = task.id;
+                masterCard.innerHTML = `<span>${task.name}</span><span style="font-size: 1.5rem;">${task.emoji}</span>`;
+                masterTaskArea.appendChild(masterCard);
+            });
+        }
+
+        // --- Edit Mode ---
+        function toggleEditMode() {
+            state.editMode = !state.editMode;
+            if (state.editMode) stopMainTimer();
+            updateUIForMode();
+            render();
+        }
+        
+        function updateUIForMode() {
+            document.body.classList.toggle('edit-mode', state.editMode);
+            editPanel.style.display = state.editMode ? 'flex' : 'none';
+            runBtn.style.display = state.editMode ? 'inline-block' : 'none';
+            mainTimerDisplay.style.display = state.editMode ? 'none' : 'block';
+            mainTimerInput.style.display = state.editMode ? 'block' : 'none';
+            mainTimerInput.value = state.mainTimer.initialTime / 60;
+            editBtn.innerHTML = state.editMode ? '✅ Done Editing' : '✏️ Edit';
+        }
+        
+        mainTimerInput.addEventListener('change', () => {
+             const newTime = parseInt(mainTimerInput.value, 10);
+             if (newTime > 0) {
+                 state.mainTimer.initialTime = newTime * 60;
+                 if (!state.mainTimer.isRunning) {
+                    state.mainTimer.remainingTime = state.mainTimer.initialTime;
+                    mainTimerDisplay.textContent = formatTime(state.mainTimer.remainingTime);
+                 }
+             }
+        });
+
+        // --- Event Listeners ---
+        settingsBtn.addEventListener('click', () => {
+            dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+        });
+        document.addEventListener('click', (e) => {
+            if (!settingsBtn.parentElement.contains(e.target)) {
+                dropdownMenu.style.display = 'none';
+            }
+        });
+        
+        editBtn.addEventListener('click', toggleEditMode);
+        runBtn.addEventListener('click', () => {
+             toggleEditMode();
+             startMainTimer();
+        });
+
+        addChildBtn.addEventListener('click', () => {
+            const name = newChildNameInput.value.trim();
+            if (name) {
+                state.children.push({ id: Date.now(), name, tasks: [], elapsedTime: 0, isFinished: false, intervalId: null });
+                newChildNameInput.value = '';
+                render();
+            }
+        });
+
+        addTaskBtn.addEventListener('click', () => {
+            const name = newTaskNameInput.value.trim();
+            const emoji = newTaskEmojiInput.value.trim();
+            if (name && emoji) {
+                state.masterTasks.push({ id: `master-${Date.now()}`, name, emoji });
+                newTaskNameInput.value = '';
+                newTaskEmojiInput.value = '';
+                renderMasterTasks();
+            }
+        });
+        
+        mainContent.addEventListener('click', e => {
+            if (e.target.classList.contains('remove-column-btn')) {
+                const idToRemove = parseInt(e.target.dataset.id, 10);
+                state.children = state.children.filter(c => c.id !== idToRemove);
+                render();
+            }
+            if (e.target.classList.contains('remove-task-btn')) {
+                const childId = parseInt(e.target.dataset.childId, 10);
+                const taskIdToRemove = e.target.dataset.taskId;
+                const child = state.children.find(c => c.id === childId);
+                if(child) child.tasks = child.tasks.filter(t => t.id !== taskIdToRemove);
+                render();
+            }
+        });
+        
+        mainContent.addEventListener('change', (e) => {
+            if (e.target.type === 'checkbox') {
+                if (state.editMode) { e.preventDefault(); return; }
+                if (!state.mainTimer.isRunning) startMainTimer();
+                
+                const childId = parseInt(e.target.dataset.childId, 10);
+                const taskId = e.target.dataset.taskId;
+                
+                const child = state.children.find(c => c.id === childId);
+                const task = child.tasks.find(t => t.id === taskId);
+                task.completed = e.target.checked;
+                
+                e.target.closest('.task-card').classList.toggle('completed', task.completed);
+                
+                if (child.tasks.length > 0 && child.tasks.every(t => t.completed) && !child.isFinished) {
+                    child.isFinished = true;
+                    stopChildTimer(child.id);
+                    allDoneMessage.textContent = `${child.name} is all done! 🥳`;
+                    allDoneModal.style.display = 'flex';
+                    addToTop10(child.name, child.elapsedTime);
+                }
+            }
+        });
+        
+        // --- Drag and Drop (Mouse & Touch) ---
+        let draggedTaskId = null;
+        let touchDraggedGhost = null;
+
+        // Mouse Events
+        masterTaskArea.addEventListener('dragstart', e => { if (e.target.classList.contains('master-task-card')) { draggedTaskId = e.target.dataset.taskId; e.target.classList.add('dragging'); } });
+        masterTaskArea.addEventListener('dragend', e => { if (e.target.classList.contains('master-task-card')) e.target.classList.remove('dragging'); draggedTaskId = null; });
+        mainContent.addEventListener('dragover', e => { e.preventDefault(); const col = e.target.closest('.child-column'); if (col) { document.querySelectorAll('.child-column.focused').forEach(c => c.classList.remove('focused')); col.classList.add('focused'); } });
+        mainContent.addEventListener('dragleave', e => { const col = e.target.closest('.child-column'); if (col) col.classList.remove('focused'); });
+        mainContent.addEventListener('drop', e => {
+            e.preventDefault();
+            document.querySelectorAll('.child-column.focused').forEach(c => c.classList.remove('focused'));
+            const column = e.target.closest('.child-column');
+            if (column && draggedTaskId) {
+                const child = state.children.find(c => c.id === parseInt(column.dataset.id, 10));
+                const masterTask = state.masterTasks.find(t => t.id === draggedTaskId);
+                if (child && masterTask) {
+                    child.tasks.push({ ...masterTask, id: `task-${Date.now()}`, completed: false });
+                    render();
+                }
+            }
+        });
+        
+        // Touch Events
+        function updateGhostPosition(touch) {
+            if (touchDraggedGhost) {
+                touchDraggedGhost.style.left = `${touch.clientX - touchDraggedGhost.offsetWidth / 2}px`;
+                touchDraggedGhost.style.top = `${touch.clientY - touchDraggedGhost.offsetHeight / 2}px`;
+            }
+        }
+
+        masterTaskArea.addEventListener('touchstart', e => {
+            const masterCard = e.target.closest('.master-task-card');
+            if (masterCard) {
+                e.preventDefault();
+                draggedTaskId = masterCard.dataset.taskId;
+
+                touchDraggedGhost = masterCard.cloneNode(true);
+                touchDraggedGhost.style.position = 'absolute';
+                touchDraggedGhost.style.zIndex = '2000';
+                touchDraggedGhost.style.opacity = '0.7';
+                touchDraggedGhost.style.pointerEvents = 'none';
+                document.body.appendChild(touchDraggedGhost);
+
+                updateGhostPosition(e.touches[0]);
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchmove', e => {
+            if (touchDraggedGhost) {
+                e.preventDefault();
+                updateGhostPosition(e.touches[0]);
+
+                touchDraggedGhost.style.display = 'none';
+                const elementUnder = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+                touchDraggedGhost.style.display = 'block';
+
+                document.querySelectorAll('.child-column.focused').forEach(c => c.classList.remove('focused'));
+                const column = elementUnder ? elementUnder.closest('.child-column') : null;
+                if (column) {
+                    column.classList.add('focused');
+                }
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', e => {
+            if (touchDraggedGhost) {
+                touchDraggedGhost.style.display = 'none';
+                const elementUnder = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+                
+                const column = elementUnder ? elementUnder.closest('.child-column') : null;
+                if (column && draggedTaskId) {
+                    const child = state.children.find(c => c.id === parseInt(column.dataset.id, 10));
+                    const masterTask = state.masterTasks.find(t => t.id === draggedTaskId);
+                    if (child && masterTask) {
+                        child.tasks.push({ ...masterTask, id: `task-${Date.now()}`, completed: false });
+                        render();
+                    }
+                }
+
+                document.body.removeChild(touchDraggedGhost);
+                document.querySelectorAll('.child-column.focused').forEach(c => c.classList.remove('focused'));
+                draggedTaskId = null;
+                touchDraggedGhost = null;
+            }
+        });
+
+
+        // --- Modal & Menu Controls ---
+        allDoneOkBtn.addEventListener('click', () => allDoneModal.style.display = 'none');
+        top10OkBtn.addEventListener('click', () => top10Modal.style.display = 'none');
+        aboutOkBtn.addEventListener('click', () => aboutModal.style.display = 'none');
+        aboutBtn.addEventListener('click', () => { dropdownMenu.style.display = 'none'; aboutModal.style.display = 'flex'; });
+        window.addEventListener('click', (e) => {
+            if (e.target == allDoneModal) allDoneModal.style.display = 'none';
+            if (e.target == top10Modal) top10Modal.style.display = 'none';
+            if (e.target == aboutModal) aboutModal.style.display = 'none';
+        });
+
+        // --- Data Persistence & Management ---
+        saveBtn.addEventListener('click', saveState);
+        resetBtn.addEventListener('click', () => { if (confirm('Are you sure you want to reset all tasks and timers? This cannot be undone.')) { state.children.forEach(c => c.tasks.forEach(t => t.completed = false)); resetTimers(); saveState(); } });
+        function saveState() { localStorage.setItem('taskTimerAppState', JSON.stringify(state)); const originalText = saveBtn.innerHTML; saveBtn.innerHTML = '✅ Saved!'; setTimeout(() => { saveBtn.innerHTML = originalText; }, 1500); }
+        function loadState() {
+            const savedState = localStorage.getItem('taskTimerAppState');
+            if (savedState) {
+                const parsedState = JSON.parse(savedState);
+                parsedState.mainTimer.isRunning = false;
+                parsedState.mainTimer.intervalId = null;
+                parsedState.children.forEach(c => c.intervalId = null);
+                state = parsedState;
+                resetTimers();
+            }
+        }
+        exportBtn.addEventListener('click', () => { const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state)); const a = document.createElement('a'); a.setAttribute("href", dataStr); a.setAttribute("download", `KidsTaskTimer_data_${new Date().toISOString().slice(0,10)}.json`); a.click(); a.remove(); });
+        importInput.addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const importedState = JSON.parse(e.target.result); if (importedState.children && importedState.masterTasks && importedState.mainTimer) { state = importedState; resetTimers(); saveState(); alert('Data imported successfully!'); } else alert('Invalid data file.'); } catch (error) { alert('Error reading file.'); } }; reader.readAsText(file); importInput.value = ''; });
+
+        // --- Top 10 ---
+        function addToTop10(name, time) { state.top10.push({ name, time }); state.top10.sort((a, b) => a.time - b.time); state.top10 = state.top10.slice(0, 10); saveState(); }
+        top10Btn.addEventListener('click', () => {
+            top10List.innerHTML = '';
+            if (state.top10.length === 0) { top10List.innerHTML = '<li>No records yet! Complete all tasks to get on the board.</li>'; } 
+            else { state.top10.forEach((score, index) => { const li = document.createElement('li'); li.innerHTML = `<span>${index + 1}. <span class="name">${score.name}</span></span><span class="time">${formatTime(score.time)}</span>`; top10List.appendChild(li); }); }
+            top10Modal.style.display = 'flex';
+        });
+
+        // --- License Download ---
+        const licenseText = `KidsTaskTimer Personal Use License
+
+Copyright (c) 2025 Adam N. Butcher / 360v. All rights reserved.
+
+This license governs the use of KidsTaskTimer (the "Software"). By downloading, installing, or using the Software, you agree to be bound by the terms of this license.
+
+1. Grant of License:
+   The Software is provided free of charge for personal, non-commercial use only. You may install and use the Software on any device for personal purposes, subject to the terms of this license.
+
+2. Attribution:
+   You must give appropriate credit to Adam N. Butcher / 360v as the developer of the Software in any copy, distribution, or public display of the Software. The following attribution notice must be included in any copy of the Software or its documentation:
+   "KidsTaskTimer was developed by Adam N. Butcher / 360v."
+
+3. Restrictions:
+   - You may not use the Software for commercial purposes, including but not limited to selling, licensing, or using the Software to generate revenue.
+   - You may not sell, sublicense, rent, lease, or otherwise distribute the Software for profit.
+   - You may not modify, adapt, reverse engineer, decompile, or create derivative works based on the Software without prior written permission from Adam N. Butcher / 360v.
+   - You may not remove or alter any copyright, attribution, or license notices included with the Software.
+
+4. Distribution:
+   You may distribute the Software to others for personal, non-commercial use, provided that:
+   - The Software is distributed in its original, unmodified form.
+   - This license and all attribution notices are included with any distributed copy.
+   - No fee is charged for the distribution.
+
+5. Ownership:
+   The Software is licensed, not sold. Adam N. Butcher / 360v retains all rights, title, and interest in the Software, including all intellectual property rights.
+
+6. No Warranty:
+   The Software is provided "as is" without warranty of any kind, express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, or non-infringement. Adam N. Butcher / 360v is not liable for any damages arising from the use of the Software.
+
+7. Termination:
+   This license is effective until terminated. Your rights under this license will terminate automatically if you fail to comply with any of its terms. Upon termination, you must cease all use and distribution of the Software and destroy all copies in your possession.
+
+8. Governing Law:
+   This license shall be governed by and construed in accordance with the laws of the State of Minnesota, United States of America. Any disputes arising under this license shall be resolved in the courts of the State of Minnesota, United States of America.
+
+For questions or permissions beyond the scope of this license, contact go360v@gmail.com.
+
+Adam N. Butcher / 360v
+2025`;
+
+        licenseLink.addEventListener('click', (event) => {
+            event.preventDefault();
+            const blob = new Blob([licenseText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "LICENSE-KidsTaskTimer2025.txt";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // Initial Load
+        loadState();
+        updateUIForMode();
+    });
+    </script>
+</body>
+</html>```
